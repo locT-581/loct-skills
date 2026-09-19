@@ -188,11 +188,11 @@ skills update nextjs-clean-architecture
 When you want to share this toolchain with teammates or use it via `npx`:
 
 ### Option 1: Push Skills Repository to GitHub
-1. Initialize a Git repository and push all source code to GitHub (e.g., `github.com/username/my-agent-skills`).
+1. Initialize a Git repository and push all source code to GitHub (e.g., `github.com/locT-581/loct-skills`).
 2. Open [lockfile.ts](file:///Users/loct-581/Work/My-Project/loct-custom-skills/packages/cli/src/core/lockfile.ts) and configure your default repository name.
 3. Users on any machine can then install skills via:
    ```bash
-   npx @username/skills add <skill-name>
+   npx @loct-581/skills add <skill-name>
    ```
 
 ### Option 2: Publish CLI Package to npm

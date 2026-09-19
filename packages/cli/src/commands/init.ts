@@ -35,8 +35,8 @@ export async function initCommand(options: InitOptions = {}): Promise<void> {
   }
 
   const initialLockfile = {
-    $schema: "https://raw.githubusercontent.com/username/my-skills/main/schema.json",
-    repository: "username/my-skills",
+    $schema: "https://raw.githubusercontent.com/locT-581/loct-skills/main/schema.json",
+    repository: "locT-581/loct-skills",
     installed: {},
   };
 

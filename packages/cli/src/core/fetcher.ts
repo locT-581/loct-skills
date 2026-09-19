@@ -90,7 +90,7 @@ export async function fetchSkill(
     await copyDir(localSrc, destSkillDir);
   } else {
     // Remote GitHub mode
-    const repo = options.repository || "username/my-skills";
+    const repo = options.repository || "locT-581/loct-skills";
     const rawUrl = `https://raw.githubusercontent.com/${repo}/main/skills/${skillName}/SKILL.md`;
 
     const res = await fetch(rawUrl);

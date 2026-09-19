@@ -1,5 +1,5 @@
 {
-  "name": "@skills/cli",
+  "name": "@loct-581/skills",
   "version": "1.0.0",
   "description": "Universal CLI engine to manage and distribute AI Agent skills",
   "bin": {

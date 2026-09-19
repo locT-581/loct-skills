@@ -31,8 +31,8 @@ export async function addCommand(skillName: string, options: AddOptions = {}): P
   if (!lockfile) {
     p.log.info(".skills.json not found, initializing automatically...");
     lockfile = {
-      $schema: "https://raw.githubusercontent.com/username/my-skills/main/schema.json",
-      repository: "username/my-skills",
+      $schema: "https://raw.githubusercontent.com/locT-581/loct-skills/main/schema.json",
+      repository: "locT-581/loct-skills",
       installed: {},
     };
     await writeLockfile(projectRoot, lockfile);
