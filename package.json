@@ -5,10 +5,10 @@
   "description": "Personalized Agent Skills Repository and Universal CLI distribution engine",
   "packageManager": "pnpm@10.33.0",
   "scripts": {
-    "build": "pnpm --filter @loct-581/skills run build",
-    "dev": "pnpm --filter @loct-581/skills run dev",
-    "test": "pnpm --filter @loct-581/skills run test",
-    "typecheck": "pnpm --filter @loct-581/skills run typecheck"
+    "build": "pnpm --filter @loctx581/skills run build",
+    "dev": "pnpm --filter @loctx581/skills run dev",
+    "test": "pnpm --filter @loctx581/skills run test",
+    "typecheck": "pnpm --filter @loctx581/skills run typecheck"
   },
   "devDependencies": {
     "typescript": "^5.7.3"

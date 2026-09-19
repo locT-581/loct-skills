@@ -1,9 +1,9 @@
 {
-  "name": "@loct-581/skills",
+  "name": "@loctx581/skills",
   "version": "1.0.0",
   "description": "Universal CLI engine to manage and distribute AI Agent skills",
   "bin": {
-    "skills": "./dist/index.js"
+    "skills": "dist/index.js"
   },
   "type": "module",
   "files": [

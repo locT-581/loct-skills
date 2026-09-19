@@ -192,7 +192,7 @@ When you want to share this toolchain with teammates or use it via `npx`:
 2. Open [lockfile.ts](file:///Users/loct-581/Work/My-Project/loct-custom-skills/packages/cli/src/core/lockfile.ts) and configure your default repository name.
 3. Users on any machine can then install skills via:
    ```bash
-   npx @loct-581/skills add <skill-name>
+   npx @loctx581/skills add <skill-name>
    ```
 
 ### Option 2: Publish CLI Package to npm
