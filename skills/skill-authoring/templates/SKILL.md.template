@@ -1,0 +1,76 @@
+---
+# ┌─────────────────────────────────────────────────────────────┐
+# │  REGISTRY SKILL TEMPLATE                                    │
+# │  For skills distributed via `skills add <name>` CLI         │
+# │                                                             │
+# │  Author path:     skills/<skill-name>/SKILL.md              │
+# │  Installed path:  .skills/<skill-name>/  (in downstream)    │
+# └─────────────────────────────────────────────────────────────┘
+name: "{{skill-name}}"
+# ↑ kebab-case, must match directory name exactly
+
+version: "1.0.0"
+# ↑ Semver: MAJOR.MINOR.PATCH — start at 1.0.0
+
+description: "{{One to two sentences: what this skill enforces/teaches and when it activates}}"
+# ↑ CRITICAL for agent routing — be precise and searchable
+# ↑ See references/frontmatter-spec.md for detailed guidance
+
+triggers:
+  globs:
+    - "{{glob_pattern}}"
+    # Examples: "src/**/*.ts", "*.config.{js,ts}", "src/modules/**/domain/**"
+    # Use [] for intent-only activation
+  intents:
+    - "{{user_intent_1}}"
+    - "{{user_intent_2}}"
+    # 2-5 phrases covering common user requests
+  default_mode: "auto"
+  # "auto" (recommended) | "always" (foundational only) | "manual" (rare/dangerous)
+
+dependencies:
+  # Flat list of other skill names required (kebab-case)
+  # Example: - "typescript-strict-rules"
+  []
+---
+
+# {{Skill Title}}
+
+{{Brief 1-2 sentence overview of what this skill provides and why it matters.}}
+
+## 1. Core Principles
+
+<!-- Each rule: actionable, testable, independent.
+     See references/writing-guide.md for style guidance. -->
+
+1. **{{Rule Name}}**: {{Imperative description of the rule}}.
+2. **{{Rule Name}}**: {{Imperative description of the rule}}.
+3. **{{Rule Name}}**: {{Imperative description of the rule}}.
+
+## 2. Standard Operating Procedure
+
+1. {{First step — what to check or set up}}
+2. {{Second step — the main action}}
+3. {{Third step — validation or follow-up}}
+
+## 3. Code Examples
+
+```typescript
+// ✅ Correct — {{explanation}}
+{{correct_code_example}}
+
+// ❌ Incorrect — {{explanation}}
+{{incorrect_code_example}}
+```
+
+<!-- NOTE ON PATHS:
+     Callouts below use `.skills/` — this is the INSTALLED path in downstream
+     projects (created by `skills add`). When authoring, your source is in
+     `skills/<name>/`. The downstream consumer only sees `.skills/<name>/`. -->
+
+> [!TIP]
+> Boilerplate code templates available at: `.skills/{{skill-name}}/templates/`
+
+> [!IMPORTANT]
+> Run compliance verification with:
+> `bash .skills/{{skill-name}}/scripts/verify.sh`

@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "registry-skill.schema.json",
+  "title": "Registry Skill Frontmatter",
+  "description": "Canonical schema for YAML frontmatter of Registry Skills (skills/<name>/SKILL.md). This file is the single source of truth — docs and validators derive from it.",
+  "type": "object",
+  "required": ["name", "version", "description", "triggers", "dependencies"],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+      "description": "Kebab-case skill identifier. Must match the directory name."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$",
+      "description": "Semantic versioning: MAJOR.MINOR.PATCH. No leading zeros."
+    },
+    "description": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 200,
+      "description": "1-2 sentences: what the skill does and when it activates. Primary input for agent semantic routing."
+    },
+    "triggers": {
+      "type": "object",
+      "required": ["globs", "intents", "default_mode"],
+      "additionalProperties": false,
+      "properties": {
+        "globs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "not": { "const": "**/*" }
+          },
+          "description": "File glob patterns that auto-activate this skill. May be empty for intent-only skills."
+        },
+        "intents": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 3
+          },
+          "maxItems": 5,
+          "description": "Natural language phrases that trigger this skill. Recommended 2-5."
+        },
+        "default_mode": {
+          "type": "string",
+          "enum": ["auto", "always", "manual"],
+          "description": "auto = activate on match, always = always active, manual = explicit only."
+        }
+      }
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+      },
+      "description": "Flat list of skill names this skill requires."
+    }
+  }
+}

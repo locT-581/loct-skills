@@ -1,0 +1,55 @@
+import { z } from "zod";
+
+export const {{UseCaseName}}InputSchema = z.object({
+  id: z.string().min(1, "ID is required"),
+  payload: z.record(z.unknown()).optional(),
+});
+
+export type {{UseCaseName}}Input = z.infer<typeof {{UseCaseName}}InputSchema>;
+
+export type {{UseCaseName}}Result<T> =
+  | { success: true; data: T }
+  | { success: false; error: { code: string; message: string } };
+
+export interface {{EntityName}}Repository {
+  findById(id: string): Promise<unknown | null>;
+  save(data: unknown): Promise<void>;
+}
+
+export class {{UseCaseName}}UseCase {
+  constructor(private readonly repository: {{EntityName}}Repository) {}
+
+  async execute(rawInput: unknown): Promise<{{UseCaseName}}Result<unknown>> {
+    const parseResult = {{UseCaseName}}InputSchema.safeParse(rawInput);
+    if (!parseResult.success) {
+      return {
+        success: false,
+        error: {
+          code: "VALIDATION_ERROR",
+          message: parseResult.error.errors.map((e) => e.message).join(", "),
+        },
+      };
+    }
+
+    try {
+      const existing = await this.repository.findById(parseResult.data.id);
+      if (!existing) {
+        return {
+          success: false,
+          error: { code: "NOT_FOUND", message: "Resource not found" },
+        };
+      }
+
+      await this.repository.save(parseResult.data);
+      return { success: true, data: existing };
+    } catch (err) {
+      return {
+        success: false,
+        error: {
+          code: "INTERNAL_ERROR",
+          message: err instanceof Error ? err.message : "Unknown error",
+        },
+      };
+    }
+  }
+}

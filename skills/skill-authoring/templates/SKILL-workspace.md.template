@@ -1,0 +1,76 @@
+---
+# ┌─────────────────────────────────────────────────────────────┐
+# │  WORKSPACE SKILL TEMPLATE                                   │
+# │  For agent-executable workflows in .agent/skills/           │
+# │  Place in: .agent/skills/<skill-name>/SKILL.md              │
+# └─────────────────────────────────────────────────────────────┘
+name: {{skill-name}}
+# ↑ kebab-case, must match directory name exactly
+
+description: '{{What this skill does and when to use it — 1-2 sentences. Include trigger phrases users would say.}}'
+# ↑ Examples:
+#   'Facilitate a brainstorming session. Use when the user says "help me brainstorm"'
+#   'Run code review with multiple reviewers. Use when the user says "review this code"'
+---
+
+# {{Skill Title}}
+
+## Overview
+
+<!-- Brief description of:
+     - What problem this skill solves
+     - What the expected outcome looks like
+     - Who this is for (the agent persona, if any) -->
+
+{{Description of the skill's purpose, the persona the agent should adopt, and what success looks like.}}
+
+## On Activation
+
+<!-- Steps the agent MUST execute when this skill is first loaded.
+     Common steps:
+     - Load configuration files
+     - Check prerequisites
+     - Greet the user
+     - Present options or resume from a previous session -->
+
+1. {{Load any required configuration or context}}
+2. {{Check prerequisites (files exist, tools available, etc.)}}
+3. {{Greet user and present available actions}}
+
+## Workflow
+
+<!-- The main procedure. Use clear headings for distinct phases.
+     Include decision points, loops, and exit conditions.
+     Reference supplementary docs in references/ when sections get long. -->
+
+### Phase 1: {{Phase Name}}
+
+{{Step-by-step instructions for this phase.}}
+
+### Phase 2: {{Phase Name}}
+
+{{Step-by-step instructions for this phase.}}
+
+### Phase 3: {{Phase Name}}
+
+{{Step-by-step instructions for this phase.}}
+
+## Output
+
+<!-- What artifacts does this skill produce?
+     - Files created or modified
+     - Reports generated
+     - Decisions recorded
+     Where are outputs stored? -->
+
+- {{Output artifact 1 — location and format}}
+- {{Output artifact 2 — location and format}}
+
+<!-- Optional: Additional directories this skill may use -->
+<!--
+## References
+
+If supplementary documentation exists:
+- `references/phase-details.md` — detailed instructions for complex phases
+- `references/decision-matrix.md` — criteria for key decision points
+-->

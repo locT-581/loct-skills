@@ -1,0 +1,35 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build outputs
+dist
+out
+.turbo
+
+# Test coverage
+coverage
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Environment & OS
+.DS_Store
+._*
+__MACOSX/
+*.local
+
+# Sandbox testing temporary folders
+sandbox-*
+tmp-*
+
+# AI agent
+_bmad
+_bmad-output
+.agent/
+.agents/
+.claude/
+.gemini/
+.github/agents/

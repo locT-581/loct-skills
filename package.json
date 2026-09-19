@@ -1,0 +1,16 @@
+{
+  "name": "skills-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Personalized Agent Skills Repository and Universal CLI distribution engine",
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "build": "pnpm --filter @skills/cli run build",
+    "dev": "pnpm --filter @skills/cli run dev",
+    "test": "pnpm --filter @skills/cli run test",
+    "typecheck": "pnpm --filter @skills/cli run typecheck"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}

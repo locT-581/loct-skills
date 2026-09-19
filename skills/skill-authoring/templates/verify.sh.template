@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+# ┌─────────────────────────────────────────────────────────────┐
+# │  VERIFICATION SCRIPT TEMPLATE                               │
+# │  Validates compliance with skill rules via static analysis  │
+# │                                                             │
+# │  SAFETY RULES — non-negotiable:                             │
+# │  1. MUST be read-only (never delete, mutate, or write)      │
+# │  2. MUST NOT make network requests (curl, wget, fetch)      │
+# │  3. MUST NOT eval generated or user input                   │
+# │  4. MUST quote all path variables ("$var", "${path}")       │
+# │  5. MUST NOT source untrusted files                         │
+# │  6. MUST reject paths outside the skill/project root        │
+# │  7. Exit 0 on all checks pass, exit 1 on any failure       │
+# │  8. Print clear ✅/❌ per check                              │
+# └─────────────────────────────────────────────────────────────┘
+set -euo pipefail
+
+SKILL_NAME="{{skill-name}}"
+ERRORS=0
+
+echo "🔍 Verifying ${SKILL_NAME} compliance..."
+echo ""
+
+# ─── Check 1: {{Description of what this checks}} ─────────────────────
+echo "Check 1: {{Check description}}"
+if {{check_command}}; then
+  echo "  ✅ Pass"
+else
+  echo "  ❌ Fail: {{Failure explanation}}"
+  ERRORS=$((ERRORS + 1))
+fi
+
+# ─── Check 2: {{Description of what this checks}} ─────────────────────
+echo "Check 2: {{Check description}}"
+if {{check_command}}; then
+  echo "  ✅ Pass"
+else
+  echo "  ❌ Fail: {{Failure explanation}}"
+  ERRORS=$((ERRORS + 1))
+fi
+
+# ─── Example: Forbidden import check ──────────────────────────────────
+# Uncomment and adapt:
+#
+# echo "Check N: No forbidden imports in domain layer"
+# if [ -d "src/modules" ]; then
+#   LEAKS=$(grep -rnE "from ['\"]react['\"]|from ['\"]next" src/modules/*/domain 2>/dev/null || true)
+#   if [ -n "$LEAKS" ]; then
+#     echo "  ❌ Fail: Domain layer must not import React or Next.js:"
+#     echo "$LEAKS"
+#     ERRORS=$((ERRORS + 1))
+#   else
+#     echo "  ✅ Pass"
+#   fi
+# fi
+
+# ─── Example: TypeScript typecheck ────────────────────────────────────
+# Uncomment and adapt:
+#
+# echo "Check N: TypeScript compiles without errors"
+# if command -v pnpm &> /dev/null && [ -f "package.json" ]; then
+#   if pnpm run typecheck 2>&1; then
+#     echo "  ✅ Pass"
+#   else
+#     echo "  ❌ Fail: TypeScript compilation errors found"
+#     ERRORS=$((ERRORS + 1))
+#   fi
+# fi
+
+# ─── Results ──────────────────────────────────────────────────────────
+echo ""
+if [ "$ERRORS" -gt 0 ]; then
+  echo "💥 ${ERRORS} check(s) failed."
+  exit 1
+else
+  echo "✨ All checks passed!"
+  exit 0
+fi

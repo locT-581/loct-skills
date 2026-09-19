@@ -1,0 +1,13 @@
+// Domain Contract (src/modules/{{module}}/domain/{{entity}}-repository.ts)
+export interface {{EntityName}}Repository {
+  findById(id: string): Promise<{{EntityName}}Entity | null>;
+  findAll(): Promise<{{EntityName}}Entity[]>;
+  save(entity: {{EntityName}}Entity): Promise<void>;
+  delete(id: string): Promise<void>;
+}
+
+export interface {{EntityName}}Entity {
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
