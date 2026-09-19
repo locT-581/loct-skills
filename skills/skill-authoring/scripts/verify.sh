@@ -2,39 +2,45 @@
 # ─────────────────────────────────────────────────────────────
 # Skill Authoring — Skill Directory Validator (wrapper)
 #
-# Thin wrapper around validate.py. Tries uv first, falls back
-# to python3 if deps are already installed.
+# Runs tools/validate.py using python3. Does NOT install
+# dependencies or make network requests.
+#
+# Prerequisites (run once):
+#   pip install pyyaml jsonschema
+#   # or: uv pip install pyyaml jsonschema
 #
 # Usage:
 #   bash scripts/verify.sh <skill-directory>
+#   bash scripts/verify.sh --type registry <skill-directory>
 #
-# SAFETY: This script is strictly read-only.
+# SAFETY: This script is strictly read-only. No network.
 # ─────────────────────────────────────────────────────────────
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-VALIDATOR="${SCRIPT_DIR}/validate.py"
-
-if [ $# -lt 1 ]; then
-  echo "Usage: $0 <skill-directory>"
-  exit 2
-fi
+VALIDATOR="${SCRIPT_DIR}/../tools/validate.py"
 
 if [ ! -f "$VALIDATOR" ]; then
   echo "❌ validate.py not found at ${VALIDATOR}"
   exit 2
 fi
 
-# Try uv first (handles dependencies automatically)
-if command -v uv &>/dev/null; then
-  exec uv run --no-cache "$VALIDATOR" "$@"
+# Check python3 exists
+if ! command -v python3 &>/dev/null; then
+  echo "❌ python3 not found. Install Python 3.10+ first."
+  exit 2
 fi
 
-# Fallback: try python3 directly (requires pyyaml + jsonschema installed)
-if command -v python3 &>/dev/null; then
-  echo "⚠️  uv not found, trying python3 directly (requires pyyaml + jsonschema)..."
-  exec python3 "$VALIDATOR" "$@"
+# Check dependencies are installed (no network, no auto-install)
+if ! python3 -c 'import yaml, jsonschema' 2>/dev/null; then
+  echo "❌ Missing Python dependencies: pyyaml and/or jsonschema"
+  echo ""
+  echo "   Install them once (pick one):"
+  echo "     pip install pyyaml jsonschema"
+  echo "     uv pip install pyyaml jsonschema"
+  echo ""
+  echo "   Then re-run this script."
+  exit 2
 fi
 
-echo "❌ Neither uv nor python3 found. Install uv: https://docs.astral.sh/uv/"
-exit 2
+exec python3 "$VALIDATOR" "$@"

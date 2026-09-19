@@ -14,7 +14,8 @@ Run through this checklist after creating a skill. Fix all **Critical** items be
 - [ ] `description` does NOT use vague words like "useful", "helpful", "general"
 - [ ] `version` follows semver format `X.Y.Z` (Registry Skills only)
 - [ ] `triggers.globs` are specific — no `**/*` or overly broad patterns (Registry Skills only)
-- [ ] `triggers.intents` include 2-5 natural language phrases (Registry Skills only)
+- [ ] `triggers.intents` include 2-5 natural language phrases when intent routing is used (max 5 enforced by schema)
+- [ ] At least one activation path exists for `auto` mode skills (globs or intents)
 - [ ] `dependencies` list is accurate — every listed skill exists in the repository
 - [ ] Frontmatter validates against `schema/registry-skill.schema.json` or `schema/workspace-skill.schema.json`
 
@@ -37,6 +38,7 @@ Run through this checklist after creating a skill. Fix all **Critical** items be
 - [ ] SKILL.md file exists in the skill directory
 - [ ] Directory name matches `name` in frontmatter
 - [ ] Templates use `{{placeholder}}` syntax with clear naming (if templates exist)
+- [ ] `scripts/` contains only Bash (`*.sh`) verifiers — non-Bash tooling belongs in `tools/`
 - [ ] Scripts use `set -euo pipefail` as baseline (if scripts exist)
 - [ ] Scripts are read-only — no file mutations, no network, no eval (if scripts exist)
 

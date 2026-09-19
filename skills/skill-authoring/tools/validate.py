@@ -1,19 +1,17 @@
-# /// script
-# requires-python = ">=3.10"
-# dependencies = [
-#     "pyyaml>=6.0",
-#     "jsonschema>=4.20",
-# ]
-# ///
 """
 Skill Authoring — Canonical Skill Validator
 
 Validates a skill directory against the Canonical Schema using proper YAML
-parsing and JSON Schema validation. This replaces grep-based checks.
+parsing and JSON Schema validation.
+
+Prerequisites (install once, before first run):
+    pip install pyyaml jsonschema
+    # or: uv pip install pyyaml jsonschema
 
 Usage:
-    uv run scripts/validate.py <skill-directory>
-    python3 scripts/validate.py <skill-directory>  # if deps are installed
+    python3 tools/validate.py <skill-directory>
+    python3 tools/validate.py --type registry <skill-directory>
+    python3 tools/validate.py --type workspace <skill-directory>
 
 SAFETY: This script is strictly read-only. No mutations, no network.
 """
@@ -29,14 +27,48 @@ from pathlib import Path
 try:
     import yaml
 except ImportError:
-    print("❌ pyyaml not installed. Run with: uv run scripts/validate.py <dir>")
+    print("❌ Missing dependency: pyyaml")
+    print("   Install once: pip install pyyaml jsonschema")
     sys.exit(2)
 
 try:
     import jsonschema
 except ImportError:
-    print("❌ jsonschema not installed. Run with: uv run scripts/validate.py <dir>")
+    print("❌ Missing dependency: jsonschema")
+    print("   Install once: pip install pyyaml jsonschema")
     sys.exit(2)
+
+
+# ─── Strict YAML loader (rejects duplicate keys) ─────────────────────
+
+class DuplicateKeyError(Exception):
+    """Raised when a YAML mapping contains duplicate keys."""
+    def __init__(self, key: str) -> None:
+        self.key = key
+        super().__init__(f"duplicate YAML key: {key}")
+
+
+class _StrictSafeLoader(yaml.SafeLoader):
+    """SafeLoader that raises DuplicateKeyError on duplicate mapping keys."""
+    pass
+
+
+def _strict_construct_mapping(loader: yaml.Loader, node: yaml.MappingNode, deep: bool = False) -> dict:
+    loader.flatten_mapping(node)
+    pairs = loader.construct_pairs(node, deep=deep)
+    seen: set[str] = set()
+    for key, _ in pairs:
+        key_str = str(key)
+        if key_str in seen:
+            raise DuplicateKeyError(key_str)
+        seen.add(key_str)
+    return dict(pairs)
+
+
+_StrictSafeLoader.add_constructor(
+    yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+    _strict_construct_mapping,
+)
 
 
 # ─── Constants ────────────────────────────────────────────────────────
@@ -45,18 +77,34 @@ SKILL_MD = "SKILL.md"
 MAX_LINES_PASS = 200
 MAX_LINES_WARN = 250
 
-# Dangerous patterns in script UNCOMMENTED lines (heuristics, not guarantees)
+# Dangerous patterns in script UNCOMMENTED lines (heuristics, not guarantees).
+# Patterns are checked against uncommented lines only (comment lines stripped).
+# For command-name patterns, \b ensures we match the command itself, not
+# occurrences inside strings like grep "curl". This reduces false positives
+# but cannot eliminate them — the safety claim is "heuristic, not a substitute
+# for manual review".
+
 MUTATION_PATTERNS: list[re.Pattern[str]] = [
     re.compile(r"\brm\s"),
     re.compile(r"\bmv\s"),
-    re.compile(r"\bcp\s+-[rf]"),
+    re.compile(r"\bcp\s"),
     re.compile(r"\btouch\s"),
     re.compile(r"\bmkdir\s"),
     re.compile(r"\btee\s"),
     re.compile(r"\btruncate\s"),
     re.compile(r"\bsed\s+-i"),
-    re.compile(r"(?:^|\s)[12]?\s*>\s*[a-zA-Z./]"),  # > file or 1> file (not inside strings/html)
-    re.compile(r"\s>>\s*\S"),                   # >> file (redirect append)
+    re.compile(r"\bchmod\s"),
+    re.compile(r"\bchown\s"),
+    re.compile(r"\bln\s"),
+    re.compile(r"\binstall\s+-"),  # install -m/-d/-g/-o (not "pip install" in echo)
+    # > file / 1> file / 2> file (not >/dev/null, not > "$var" which is below)
+    re.compile(r"(?:^|\s)[12]?\s*>\s*(?!/dev/null)[a-zA-Z./]"),
+    # >> file (not >>/dev/null)
+    re.compile(r"\s>>\s*(?!/dev/null)\S"),
+    # > "$var" / > "${var}" — quoted variable redirect
+    re.compile(r'(?:^|\s)[12]?\s*>\s*["\$]'),
+    # >> "$var" — append to quoted variable
+    re.compile(r'\s>>\s*["\$]'),
 ]
 INJECTION_PATTERNS: list[re.Pattern[str]] = [
     re.compile(r"\beval\b"),
@@ -67,6 +115,24 @@ NETWORK_PATTERNS: list[re.Pattern[str]] = [
     re.compile(r"\bcurl\b"),
     re.compile(r"\bwget\b"),
     re.compile(r"\bfetch\b"),
+    re.compile(r"\bgit\s+clone\b"),
+    re.compile(r"\bgit\s+fetch\b"),
+    re.compile(r"\bgit\s+pull\b"),
+    re.compile(r"\bgit\s+ls-remote\b"),
+    re.compile(r"\bnc\b"),
+    re.compile(r"\bncat\b"),
+    re.compile(r"\bssh\b"),
+    re.compile(r"\bscp\b"),
+]
+# Patterns that indicate a script executes external code (trust boundary).
+# Verifier scripts must be self-contained Bash — they should not delegate
+# to unscanned Python/JS/shell scripts.
+# Excludes: python3 -c "..." (inline, safe), command -v python3 (check, safe)
+EXEC_EXTERNAL_PATTERNS: list[re.Pattern[str]] = [
+    re.compile(r"\bpython3?\s+(?!-c\b)\S"),  # python3 <script> (not python3 -c)
+    re.compile(r"\bnode\s+(?!-e\b)\S"),       # node <script> (not node -e)
+    re.compile(r"\bbash\s+(?!-c\b)\S"),       # bash <script> (not bash -c)
+    re.compile(r"\bsh\s+(?!-c\b)\S"),         # sh <script> (not sh -c)
 ]
 
 
@@ -107,10 +173,10 @@ class Results:
             print(f"💥 {self.errors} error(s), {self.warnings} warning(s)")
             return 1
         elif self.warnings > 0:
-            print(f"✨ All checks passed with {self.warnings} warning(s)")
+            print(f"✨ All automated checks passed with {self.warnings} warning(s)")
             return 0
         else:
-            print("✨ All checks passed!")
+            print("✨ All automated checks passed!")
             return 0
 
 
@@ -153,17 +219,35 @@ def load_schema(schema_dir: Path, skill_type: str) -> dict | None:
         return json.load(f)
 
 
-def detect_skill_type(frontmatter: dict, skill_dir: Path) -> str:
-    """Detect whether this is a registry or workspace skill."""
-    # If path contains .agent/skills, it's workspace
-    parts = skill_dir.resolve().parts
-    if ".agent" in parts or "_agent" in parts:
+def detect_skill_type(skill_path_str: str, explicit_type: str | None = None) -> str | None:
+    """Detect whether this is a registry or workspace skill.
+
+    Detection priority:
+    1. Explicit --type flag (highest)
+    2. Canonical path patterns (immediate parent check):
+       - .agent/skills/<name>  → workspace
+       - skills/<name>         → registry
+       - .skills/<name>        → registry
+    3. None if ambiguous (caller must handle)
+    """
+    if explicit_type:
+        if explicit_type in ("registry", "workspace"):
+            return explicit_type
+        return None
+
+    resolved = Path(skill_path_str).resolve()
+    parent_name = resolved.parent.name
+    grandparent_name = resolved.parent.parent.name if resolved.parent != resolved.parent.parent else ""
+
+    # .agent/skills/<name>
+    if parent_name == "skills" and grandparent_name == ".agent":
         return "workspace"
-    # If frontmatter has version field, it's registry
-    if "version" in frontmatter:
+
+    # skills/<name> or .skills/<name>
+    if parent_name in ("skills", ".skills"):
         return "registry"
-    # Default to workspace if no version
-    return "workspace"
+
+    return None
 
 
 # ─── Checks ──────────────────────────────────────────────────────────
@@ -180,7 +264,10 @@ def check_frontmatter_parse(r: Results, content: str) -> tuple[dict | None, str 
 
     r.check("Frontmatter is valid YAML")
     try:
-        data = yaml.safe_load(yaml_str)
+        data = yaml.load(yaml_str, Loader=_StrictSafeLoader)
+    except DuplicateKeyError as e:
+        r.failed(f"duplicate YAML key: '{e.key}' — each key must appear exactly once")
+        return None, yaml_str
     except yaml.YAMLError as e:
         r.failed(f"YAML parse error: {e}")
         return None, yaml_str
@@ -233,7 +320,7 @@ def check_line_count(r: Results, content: str) -> None:
 
 
 def check_activation_coverage(r: Results, frontmatter: dict, skill_type: str) -> None:
-    """Check 6: Registry skills should have at least one activation path."""
+    """Check 6: Registry skills must have at least one activation path (unless manual/always)."""
     if skill_type != "registry":
         return
 
@@ -245,16 +332,18 @@ def check_activation_coverage(r: Results, frontmatter: dict, skill_type: str) ->
 
     if mode == "manual":
         r.passed("manual mode — activated only on explicit request")
+    elif mode == "always":
+        r.passed("always mode — activated in every context")
     elif globs or intents:
         r.passed(f"{len(globs)} glob(s), {len(intents)} intent(s)")
     else:
-        r.warned("both globs and intents are empty with mode 'auto' — skill may never activate")
+        r.failed("both globs and intents are empty with mode 'auto' — skill can never activate")
 
 
 def check_templates(r: Results, skill_dir: Path) -> None:
-    """Check 7: Templates have documented placeholders."""
+    """Check 7: Templates with placeholders contain documentation comments."""
     templates_dir = skill_dir / "templates"
-    r.check("Template placeholders are documented")
+    r.check("Templates with placeholders contain documentation comments")
 
     if not templates_dir.is_dir():
         r.skipped("no templates/ directory")
@@ -283,27 +372,48 @@ def check_templates(r: Results, skill_dir: Path) -> None:
 def check_scripts_safety(r: Results, skill_dir: Path) -> None:
     """Check 8: Scripts follow safety rules.
 
-    Performs conservative static checks for common unsafe patterns.
-    This is NOT a substitute for manual review — it catches obvious
-    violations but cannot guarantee a script is safe.
+    Performs conservative static checks for common unsafe patterns in Bash
+    scripts. Only *.sh files are canonical verifiers — non-Bash executables
+    in scripts/ are flagged.
+
+    This is NOT a substitute for manual review.
     """
     scripts_dir = skill_dir / "scripts"
     r.check("Scripts follow safety rules (heuristic — not a substitute for review)")
+    errors_before = r.errors
 
     if not scripts_dir.is_dir():
         r.skipped("no scripts/ directory")
         return
 
-    issues = 0
-    for script in sorted(scripts_dir.glob("*.sh")):
+    # Reject non-.sh files in scripts/ (canonical standard: bash verifiers only)
+    # Tooling like Python validators belongs in tools/, not scripts/
+    non_bash = [
+        f.name for f in sorted(scripts_dir.iterdir())
+        if f.is_file() and f.suffix not in (".sh", ".md", "")
+    ]
+    for nb in non_bash:
+        r.failed(f"{nb}: scripts/ may only contain Bash verifiers (*.sh) — move tooling to tools/")
+
+    bash_scripts = sorted(scripts_dir.glob("*.sh"))
+    if not bash_scripts and not non_bash:
+        r.skipped("no scripts found")
+        return
+
+    for script in bash_scripts:
         name = script.name
         text = script.read_text(errors="replace")
         lines = text.splitlines()
 
         # Check for set -euo pipefail (exact, not just set -e)
-        header = "\n".join(lines[:20])
-        if "set -euo pipefail" not in header:
-            if "set -e" in header:
+        # Only check non-comment lines in first 20 lines
+        header_lines = [
+            line for line in lines[:20]
+            if line.strip() and not line.lstrip().startswith("#")
+        ]
+        header_code = "\n".join(header_lines)
+        if "set -euo pipefail" not in header_code:
+            if "set -e" in header_code:
                 r.failed(f"{name}: has 'set -e' but must use 'set -euo pipefail'")
             else:
                 r.failed(f"{name}: missing 'set -euo pipefail' in first 20 lines")
@@ -315,22 +425,34 @@ def check_scripts_safety(r: Results, skill_dir: Path) -> None:
         ]
         uncommented_text = "\n".join(uncommented)
 
-        # Check for dangerous patterns
+        # Injection patterns → error
         for pattern in INJECTION_PATTERNS:
             if pattern.search(uncommented_text):
                 r.failed(f"{name}: contains '{pattern.pattern}' — code injection risk")
 
+        # Network patterns → error
         for pattern in NETWORK_PATTERNS:
             if pattern.search(uncommented_text):
                 r.failed(f"{name}: contains '{pattern.pattern}' — scripts must be offline")
 
+        # Mutation patterns → error (clear primitives are not ambiguous)
         for pattern in MUTATION_PATTERNS:
             if pattern.search(uncommented_text):
-                r.warned(f"{name}: possible mutation detected ('{pattern.pattern}') — verify read-only intent")
-                issues += 1
-                break  # One mutation warning per script is enough
+                r.failed(f"{name}: mutation detected ('{pattern.pattern}') — scripts must be read-only")
+                break  # One mutation error per script is enough
 
-    if issues == 0 and r.errors == 0:
+        # External execution → warning (trust boundary)
+        # Verifier scripts should not delegate to unscanned external code.
+        # This is a warning because the static checker cannot determine if
+        # the target code is safe — flag for human review.
+        for pattern in EXEC_EXTERNAL_PATTERNS:
+            if pattern.search(uncommented_text):
+                r.warned(f"{name}: invokes external code ('{pattern.pattern}') — verify target is safe and read-only")
+                break
+
+    # Only report pass if no errors were added by this check
+    errors_after = r.errors
+    if errors_after == errors_before:
         r.passed()
 
 
@@ -338,10 +460,10 @@ def check_referenced_paths(r: Results, skill_dir: Path, content: str) -> None:
     """Check 9: Paths referenced in SKILL.md actually exist."""
     r.check("Referenced local paths exist")
 
-    # Find references to templates/, scripts/, references/ in the skill content
-    # Pattern: backtick-wrapped or bare paths like templates/foo, references/bar.md
+    # Find references to local skill subdirectories in the content
+    # Covers: templates/, scripts/, references/, schema/, tests/, tools/
     path_pattern = re.compile(
-        r"(?:templates|scripts|references)/[\w./-]+"
+        r"(?:templates|scripts|references|schema|tests|tools)/[\w./-]+"
     )
     matches = path_pattern.findall(content)
     if not matches:
@@ -364,11 +486,24 @@ def check_referenced_paths(r: Results, skill_dir: Path, content: str) -> None:
 # ─── Main ─────────────────────────────────────────────────────────────
 
 def main() -> int:
-    if len(sys.argv) != 2:
-        print(f"Usage: {sys.argv[0]} <skill-directory>")
+    # Parse args: [--type registry|workspace] <skill-directory>
+    args = sys.argv[1:]
+    explicit_type: str | None = None
+
+    if "--type" in args:
+        idx = args.index("--type")
+        if idx + 1 >= len(args):
+            print("❌ --type requires a value: registry or workspace")
+            return 2
+        explicit_type = args[idx + 1]
+        args = args[:idx] + args[idx + 2:]
+
+    if len(args) != 1:
+        print(f"Usage: {sys.argv[0]} [--type registry|workspace] <skill-directory>")
         return 2
 
-    skill_dir = Path(sys.argv[1])
+    skill_path_str = args[0]
+    skill_dir = Path(skill_path_str)
 
     # Resolve and verify
     skill_dir_resolved = skill_dir.resolve()
@@ -388,7 +523,7 @@ def main() -> int:
     schema_dir = script_dir.parent / "schema"
 
     r = Results()
-    print(f"🔍 Validating skill directory: {sys.argv[1]}")
+    print(f"🔍 Validating skill directory: {skill_path_str}")
     print()
 
     # Check 1-2: Frontmatter parse
@@ -398,16 +533,21 @@ def main() -> int:
         print("💥 Cannot continue without valid frontmatter")
         return 1
 
-    # Detect skill type
-    skill_type = detect_skill_type(frontmatter, Path(sys.argv[1]))
+    # Detect skill type (path-based, not content-based)
+    skill_type = detect_skill_type(skill_path_str, explicit_type)
+    if skill_type is None:
+        print()
+        print(f"❌ Cannot determine skill type from path: {skill_path_str}")
+        print("   Use --type registry or --type workspace")
+        return 2
 
-    # Check 3: Schema validation
+    # Check 3: Schema validation (required — missing schema is a hard failure)
     schema = load_schema(schema_dir, skill_type)
     if schema:
         check_schema_validation(r, frontmatter, schema, skill_type)
     else:
         r.check(f"Schema validation ({skill_type})")
-        r.skipped(f"schema file not found at {schema_dir}")
+        r.failed(f"canonical schema not found: {schema_dir}/{skill_type}-skill.schema.json")
 
     # Check 4: Name matches directory
     check_name_matches_dir(r, frontmatter, skill_dir_resolved)

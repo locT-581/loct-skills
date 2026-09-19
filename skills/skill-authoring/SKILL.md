@@ -1,6 +1,6 @@
 ---
 name: "skill-authoring"
-version: "2.1.0"
+version: "2.3.0"
 description: "Guides AI agents through creating, validating, and maintaining skills that conform to the repository's Canonical Schema. Covers both Registry Skills (skills/) and Workspace Skills (.agent/skills/)."
 triggers:
   globs: []
@@ -78,7 +78,7 @@ Boilerplate code for downstream scaffolding. Place in `<skill-dir>/templates/`. 
 
 ### Step 5: Create Scripts (if needed)
 
-Read-only verification scripts. Place in `<skill-dir>/scripts/`. Use `templates/verify.sh.template` as the starting point — it performs conservative static checks for common unsafe patterns (`set -euo pipefail`, no eval, no network, no mutation). This is not a substitute for manual review. Only create when the skill has mechanically verifiable rules.
+Read-only Bash verification scripts. Place in `<skill-dir>/scripts/`. Only `*.sh` files are permitted — non-Bash tooling belongs in `tools/`. Use `templates/verify.sh.template` as the starting point — it performs conservative static checks for common unsafe patterns (`set -euo pipefail`, no eval, no network, no mutation). This is not a substitute for manual review. Only create when the skill has mechanically verifiable rules.
 
 ### Step 6: Create References (if needed)
 
@@ -108,7 +108,8 @@ The agent MUST present the validation report before declaring delivery complete.
 <skill-dir>/
 ├── SKILL.md              # REQUIRED
 ├── templates/            # OPTIONAL — boilerplate code
-├── scripts/              # OPTIONAL — read-only verification
+├── scripts/              # OPTIONAL — Bash-only read-only verifiers
+├── tools/                # OPTIONAL — maintainer tooling (not runtime verifiers)
 └── references/           # OPTIONAL — supplementary docs
 ```
 

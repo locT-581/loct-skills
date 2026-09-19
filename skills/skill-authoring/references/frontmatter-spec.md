@@ -35,7 +35,7 @@ dependencies:
 ### `version` (required for Registry)
 
 - Format: Semantic Versioning `MAJOR.MINOR.PATCH`
-- Pattern: `^\d+\.\d+\.\d+$`
+- Pattern: `^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$` (no leading zeros)
 - Start at `1.0.0` for new skills
 - Bump rules:
   - **MAJOR** — breaking changes (rules removed, behavior reversed)
@@ -64,8 +64,8 @@ dependencies:
 ### `triggers.intents` (Registry only)
 
 - Natural language phrases users would say to invoke this skill
-- **2–5 intents** — enough to cover common phrasings, not so many that routing becomes noisy (schema enforces max 5)
-- May include non-English phrases if `document_output_language` is set
+- **Use 2–5 intents** when intent routing is used — enough to cover common phrasings, not so many that routing becomes noisy (schema enforces max 5)
+- May include non-English phrases if the repository's `document_output_language` config is set (this is a repo-level setting, e.g. in `_bmad/config.toml`, not a frontmatter field)
 - Each intent should be a complete phrase, not a single word
 
 ### `triggers.default_mode` (Registry only)

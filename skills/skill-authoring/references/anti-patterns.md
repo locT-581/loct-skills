@@ -27,7 +27,7 @@ Common mistakes when authoring skills and how to fix them.
 
 | Anti-Pattern | Why It's Bad | Do Instead |
 |---|---|---|
-| Overly broad globs like `**/*` or `**/*.ts` | Skill activates on every file, drowning out specificity | Narrow to the actual paths: `src/modules/**/domain/**` |
+| Overly broad globs like `**/*` | Skill activates on every file, drowning out specificity | `**/*` is forbidden. `**/*.ext` patterns (e.g. `**/*.ts`) are valid when the skill genuinely applies repo-wide to that file type — document the justification |
 | Only 1 intent | Low recall — user must phrase it exactly right | Provide 2-5 intents covering common phrasings |
 | More than 5 intents | Noise — skill starts matching too broadly | Consolidate to the most distinctive 3-5 phrases |
 | Using `default_mode: "always"` casually | Skill loads into every context, permanently | Reserve for truly foundational rules only |
