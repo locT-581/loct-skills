@@ -1,0 +1,1 @@
+../../valid/documented-rule/ARCHITECTURE.md

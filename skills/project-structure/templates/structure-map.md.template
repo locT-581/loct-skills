@@ -1,0 +1,79 @@
+# Project Structure Map — {{projectName}}
+
+<!-- Structure contract maintained by the project-structure skill.
+     This file is a persisted decision cache, not absolute truth.
+     Rules are revalidated against authoritative sources on every use.
+
+     A rule is authoritative only when its Status and Source explicitly
+     mark it as documented or confirmed. Do not infer authority from
+     file editing history or authorship.
+
+     Source uses typed prefixes for machine-verifiable provenance:
+       doc:<path>          → documented (path must exist, must be in Authority Sources)
+       instruction:<path>  → confirmed  (path must exist, must be in Authority Sources)
+       user:<context>      → confirmed  (context must be non-empty)
+       observed:<desc>     → observed   (evidence only, cannot authorize creation)
+       inference:<desc>    → inferred   (proposal only, cannot authorize creation) -->
+
+> Last reconciled: {{lastReconciled}}
+
+<!-- {{lastReconciled}} — date the map was last checked against authoritative sources.
+     This is audit metadata only; it does not prove sources haven't changed since. -->
+
+## Authority Sources
+
+<!-- List every basis used to derive or validate placement rules.
+     This includes documents, project instructions, AND user confirmations.
+     Use typed references matching the Source prefix format.
+     The skill uses this section to scope revalidation.
+     Rule sources must reference entries listed here. -->
+
+<!-- {{authorityRef}} — e.g., "doc:ARCHITECTURE.md", "instruction:AGENTS.md", "user:2024-01-15"
+     {{lastChecked}}  — date the source was last read and reconciled (omit for user: refs) -->
+
+- {{authorityRef}} (last checked: {{lastChecked}})
+
+## Placement Rules
+
+<!-- Each row maps a file type within a specific scope to its target directory.
+
+     AUTHORIZATION: Only rows with Status = documented or confirmed authorize file creation.
+     Rows with Status = observed or inferred are evidence, not policy.
+
+     PROVENANCE: Source must use a typed prefix matching the Status:
+       documented → doc:<path>
+       confirmed  → instruction:<path> or user:<context>
+       observed   → observed:<description>
+       inferred   → inference:<description>
+
+     IDENTITY: A rule's key is (Scope, File Type). If two authoritative rules share
+     the same key but have different Target Directories, they conflict and must be resolved. -->
+
+| Scope | File Type | Target Directory | Naming | Source | Status |
+|---|---|---|---|---|---|
+| {{scope}} | {{fileType}} | `{{targetDirectory}}` | {{namingConvention}} | {{source}} | {{status}} |
+
+<!-- {{scope}}             — architectural scope: "shared", "feature", a specific domain name, or "—" for global
+                             Must be specific enough that (Scope, File Type) resolves to one structural intent.
+     {{fileType}}          — what kind of file (e.g., "component", "service", "migration", "route")
+     {{targetDirectory}}   — where it goes; use <placeholders> for variable segments
+     {{namingConvention}}  — casing and extension (e.g., "PascalCase.tsx", "*.service.ts")
+     {{source}}            — typed provenance reference:
+                             doc:ARCHITECTURE.md, instruction:AGENTS.md, user:2024-01-15,
+                             observed:15 files follow this pattern, inference:framework convention
+     {{status}}            — one of: documented, confirmed, observed, inferred -->
+
+## Naming Defaults
+
+<!-- Global naming rules that apply when a placement rule does not specify its own naming convention. -->
+
+- {{defaultNamingRule}}
+
+<!-- {{defaultNamingRule}} — e.g., "Components: PascalCase.tsx", "Tests: *.spec.ts beside source file" -->
+
+## Notes
+
+<!-- {{SpecialNotes}} — Project-specific decisions, rationale for non-obvious structure choices,
+     historical context about directory reorganizations, or links to relevant ADRs. -->
+
+{{SpecialNotes}}
