@@ -33,3 +33,8 @@ _bmad-output
 .claude/
 .gemini/
 .github/agents/
+.skills/
+.cursor/
+AGENTS.md
+.windsurfrules
+.skills.json
